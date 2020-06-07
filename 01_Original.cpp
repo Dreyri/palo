@@ -14,6 +14,19 @@ void initParticles(Particle *const partikel, const int nr_Particles) {
   }
 }
 
+void initParticlesSoA(ParticleSoA &particles) {
+  srand(0);
+
+  for (int i = 0; i < particles.size; ++i) {
+    particles.x[i] = float(rand()) / RAND_MAX;
+    particles.y[i] = float(rand()) / RAND_MAX;
+    particles.z[i] = float(rand()) / RAND_MAX;
+    particles.vx[i] = float(rand()) / RAND_MAX;
+    particles.vy[i] = float(rand()) / RAND_MAX;
+    particles.vz[i] = float(rand()) / RAND_MAX;
+  }
+}
+
 void copyParticles(Particle *const partikel_src, Particle *const partikel_dst,
                    const int nr_Particles) {
   for (int i = 0; i < nr_Particles; i++) {
@@ -44,6 +57,21 @@ float calcChecksum(Particle *original, Particle *modified,
   return res / -245.958237;
 }
 
+float calcChecksumSoA(ParticleSoA &original, ParticleSoA &modified) noexcept {
+  float res{};
+
+  for (int i = 0; i != original.size; ++i) {
+    res += (original.x[i] - modified.x[i]);
+    res += (original.y[i] - modified.y[i]);
+    res += (original.z[i] - modified.z[i]);
+    res += (original.vx[i] - modified.vx[i]);
+    res += (original.vy[i] - modified.vy[i]);
+    res += (original.vz[i] - modified.vz[i]);
+  }
+
+  return res / -245.958237;
+}
+
 int main() {
   // Problemgr��e und Anzahl und Gr��e der Zeitschritte definieren
   constexpr int nrOfParticles = 16384;
@@ -64,13 +92,19 @@ int main() {
   */
   // therefore we must do a c style aligned allocation, the one which is an
   // intrinsic for intel compiler
+  /*
   Particle *partikel_start =
       static_cast<Particle *>(_mm_malloc(sizeof(Particle) * nrOfParticles, 64));
   Particle *partikel =
       static_cast<Particle *>(_mm_malloc(sizeof(Particle) * nrOfParticles, 64));
+  */
+
+  ParticleSoA partikel_soa_start(nrOfParticles);
 
   // Initiaslisierung der Partikel mit Zufallswerten
-  initParticles(partikel_start, nrOfParticles);
+  // initParticles(partikel_start, nrOfParticles);
+
+  initParticlesSoA(partikel_soa_start);
 
   // Messen der Performance
   double runtimeStep[nrRuns] = {0.}; // Sammlung der Laufzeiten der Steps
@@ -86,14 +120,17 @@ int main() {
   printf("#### Runtime Measurements Particle Simulation  ###\n");
 
   for (int run = 0; run < nrRuns; run++) {
-    copyParticles(partikel_start, partikel, nrOfParticles);
+    ParticleSoA partikel_soa(partikel_soa_start);
+    // copyParticles(partikel_start, partikel, nrOfParticles);
     const double tStart = omp_get_wtime(); // Start der Zeitmessung
-    MoveParticles(nrOfParticles, partikel,
-                  dt);                   // Funktion, die optimiert werden soll
+    MoveParticlesSoA(partikel_soa, dt);
+    // MoveParticles(nrOfParticles, partikel,
+    //              dt);                   // Funktion, die optimiert werden
+    //              soll
     const double tEnd = omp_get_wtime(); // Ende der Zeitmessung
 
-    float checksum = calcChecksum(partikel_start, partikel, nrOfParticles);
-
+    // float checksum = calcChecksum(partikel_start, partikel, nrOfParticles);
+    float checksum = calcChecksumSoA(partikel_soa_start, partikel_soa);
     runtimeStep[run] = tEnd - tStart;
     GFlopsStep[run] = NrOfGFLOPs / runtimeStep[run];
     if (run >= skipRuns) { // Berechnung Mittelwerte
@@ -128,5 +165,5 @@ int main() {
          stdGFlops);
   printf("#####################################\n");
 
-  delete[] partikel;
+  // delete[] partikel;
 }

@@ -2,6 +2,52 @@
 
 #include <cmath>
 
+void MoveParticlesSoA(ParticleSoA &particles, float dt) {
+  __assume_aligned(particles.x, 64);
+  __assume_aligned(particles.y, 64);
+  __assume_aligned(particles.z, 64);
+  __assume_aligned(particles.vx, 64);
+  __assume_aligned(particles.vy, 64);
+  __assume_aligned(particles.vz, 64);
+
+#pragma omp simd simdlen(16)
+  for (int i = 0; i != particles.size; ++i) {
+    float Fx = 0.f;
+    float Fy = 0.f;
+    float Fz = 0.f;
+
+    __assume_aligned(particles.x, 64);
+    __assume_aligned(particles.y, 64);
+    __assume_aligned(particles.z, 64);
+
+#pragma omp simd simdlen(16)
+    for (int j = 0; j != particles.size; ++j) {
+      constexpr float softening = 1e-20;
+
+      float dx = particles.x[j] - particles.x[i];
+      float dy = particles.y[j] - particles.y[i];
+      float dz = particles.z[j] - particles.z[i];
+      float drSquared = dx * dx + dy * dy + dz * dz + softening;
+
+      float drPower32 = std::sqrt(drSquared) * drSquared;
+
+      Fx += dx / drPower32;
+      Fy += dy / drPower32;
+      Fz += dy / drPower32;
+    }
+
+    particles.vx[i] += dt * Fx;
+    particles.vy[i] += dt * Fy;
+    particles.vz[i] += dt * Fy;
+  }
+
+  for (int i = 0; i < particles.size; ++i) {
+    particles.x[i] += particles.vx[i] * dt;
+    particles.y[i] += particles.vy[i] * dt;
+    particles.z[i] += particles.vz[i] * dt;
+  }
+}
+
 void MoveParticles(const int nr_Particles, Particle *const partikel,
                    const float dt) {
   // nicht noetig aber auch eine moeglichkeit alignment anzugeben
