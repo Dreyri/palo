@@ -15,7 +15,7 @@ void MoveParticles(const int nr_Particles, Particle *const partikel,
 
   // this tilesize gives optimal speed, it also is a multiple of the vector
   // register length allowing for optimal utilisation.
-  constexpr auto tile_size = 64;
+  constexpr auto tile_size = 16384;
 
   // Schleife �ber alle Partikel
   // for (int i = 0; i < nr_Particles; i++) {
