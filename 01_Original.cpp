@@ -39,7 +39,7 @@ float calcChecksum(Particle *original, Particle *modified,
     res += (original[i].vz - modified[i].vz);
   }
 
-  return res / -245.995529;
+  return res / -245.958237;
 }
 
 int main() {
