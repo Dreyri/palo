@@ -24,19 +24,22 @@ void copyParticles(Particle *const partikel_src, Particle *const partikel_dst,
   }
 }
 
-float calcChecksum(Particle *particles, int num_particles) noexcept {
+// use original and modified particle arrays to calculate the checksum.
+// This gives us less tolerance for error/deviation.
+float calcChecksum(Particle *original, Particle *modified,
+                   int num_particles) noexcept {
   float res{};
 
   for (int i = 0; i != num_particles; ++i) {
-    res += particles[i].x;
-    res += particles[i].y;
-    res += particles[i].z;
-    res += particles[i].vx;
-    res += particles[i].vy;
-    res += particles[i].vz;
+    res += (original[i].x - modified[i].x);
+    res += (original[i].y - modified[i].y);
+    res += (original[i].z - modified[i].z);
+    res += (original[i].vx - modified[i].vx);
+    res += (original[i].vy - modified[i].vy);
+    res += (original[i].vz - modified[i].vz);
   }
 
-  return res / 49382.42578103;
+  return res / -245.995529;
 }
 
 int main() {
@@ -75,7 +78,7 @@ int main() {
                   dt);                   // Funktion, die optimiert werden soll
     const double tEnd = omp_get_wtime(); // Ende der Zeitmessung
 
-    float checksum = calcChecksum(partikel, nrOfParticles);
+    float checksum = calcChecksum(partikel_start, partikel, nrOfParticles);
 
     runtimeStep[run] = tEnd - tStart;
     GFlopsStep[run] = NrOfGFLOPs / runtimeStep[run];
@@ -84,8 +87,8 @@ int main() {
       meanGFlops += GFlopsStep[run];
     }
 
-    printf("Run %d: Runtime: %f03,\t GFLOPS/s: %f01, \t %.4f \t %s\n", run,
-           runtimeStep[run], GFlopsStep[run], checksum,
+    printf("Run %d: Runtime: %f03,\t GFLOPS/s: %f01, \t Checksum: %f \t %s\n",
+           run, runtimeStep[run], GFlopsStep[run], checksum,
            (run < skipRuns ? "Not in Average" : ""));
     fflush(stdout); // Ausgabebuffer leeren
   }
