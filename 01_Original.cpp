@@ -75,8 +75,7 @@ int main() {
                   dt);                   // Funktion, die optimiert werden soll
     const double tEnd = omp_get_wtime(); // Ende der Zeitmessung
 
-    float checksum = 1.0f;
-    // float checksum = calcChecksum(partikel, nrOfParticles);
+    float checksum = calcChecksum(partikel, nrOfParticles);
 
     runtimeStep[run] = tEnd - tStart;
     GFlopsStep[run] = NrOfGFLOPs / runtimeStep[run];
