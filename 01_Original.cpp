@@ -1,5 +1,7 @@
 #include "main.h"
 
+#include <mm_malloc.h>
+
 void initParticles(Particle *const partikel, const int nr_Particles) {
   srand(0);
   for (int i = 0; i < nr_Particles; i++) {
@@ -51,9 +53,21 @@ int main() {
       3; // Anzahl der Messungen, die nicht in Mittelwert ber�cksichtigt werden
   constexpr float dt = 0.01f; // L�nge eines Zeitschrittes
 
-  Particle *partikel_start = new Particle[nrOfParticles];
-  Particle *partikel = new Particle[nrOfParticles];
+  // do an aligned alloc for both particle arrays
+  // the following form is sadly not supported by the intel compiler
+  /*
+  Particle *partikel_start =
+      new (static_cast<std::align_val_t>(32)) Particle[nrOfParticles];
+  Particle *partikel =
+      new (static_cast<std::align_val_t>(32)) Particle[nrOfParticles];
   copyParticles(partikel_start, partikel, nrOfParticles);
+  */
+  // therefore we must do a c style aligned allocation, the one which is an
+  // intrinsic for intel compiler
+  Particle *partikel_start =
+      static_cast<Particle *>(_mm_malloc(sizeof(Particle) * nrOfParticles, 64));
+  Particle *partikel =
+      static_cast<Particle *>(_mm_malloc(sizeof(Particle) * nrOfParticles, 64));
 
   // Initiaslisierung der Partikel mit Zufallswerten
   initParticles(partikel_start, nrOfParticles);

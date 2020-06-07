@@ -4,6 +4,7 @@
 
 void MoveParticles(const int nr_Particles, Particle *const partikel,
                    const float dt) {
+  __assume_aligned(partikel, 64);
 
   // Schleife �ber alle Partikel
   for (int i = 0; i < nr_Particles; i++) {
