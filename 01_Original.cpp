@@ -24,6 +24,21 @@ void copyParticles(Particle *const partikel_src, Particle *const partikel_dst,
   }
 }
 
+float calcChecksum(Particle *particles, int num_particles) noexcept {
+  float res{};
+
+  for (int i = 0; i != num_particles; ++i) {
+    res += particles[i].x;
+    res += particles[i].y;
+    res += particles[i].z;
+    res += particles[i].vx;
+    res += particles[i].vy;
+    res += particles[i].vz;
+  }
+
+  return res / 49382.42578103;
+}
+
 int main() {
   // Problemgr��e und Anzahl und Gr��e der Zeitschritte definieren
   constexpr int nrOfParticles = 16384;
@@ -60,6 +75,9 @@ int main() {
                   dt);                   // Funktion, die optimiert werden soll
     const double tEnd = omp_get_wtime(); // Ende der Zeitmessung
 
+    float checksum = 1.0f;
+    // float checksum = calcChecksum(partikel, nrOfParticles);
+
     runtimeStep[run] = tEnd - tStart;
     GFlopsStep[run] = NrOfGFLOPs / runtimeStep[run];
     if (run >= skipRuns) { // Berechnung Mittelwerte
@@ -67,8 +85,8 @@ int main() {
       meanGFlops += GFlopsStep[run];
     }
 
-    printf("Run %d: Runtime: %f03,\t GFLOPS/s: %f01, \t %s\n", run,
-           runtimeStep[run], GFlopsStep[run],
+    printf("Run %d: Runtime: %f03,\t GFLOPS/s: %f01, \t %.4f \t %s\n", run,
+           runtimeStep[run], GFlopsStep[run], checksum,
            (run < skipRuns ? "Not in Average" : ""));
     fflush(stdout); // Ausgabebuffer leeren
   }
