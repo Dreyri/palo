@@ -31,7 +31,7 @@ void MoveParticles(const int nr_Particles, Particle *const partikel,
 
       // sqrt ist eine schnellere funktion als pow, daher haben wir den pow
       // aufruf strength reduced zu einem sqrt aufruf.
-      float drPower32 = std::sqrt(drSquared * drSquared * drSquared);
+      float drPower32 = std::sqrt(drSquared) * drSquared;
 
       // Addiere Kraftkomponenten zur Netto-Kraft
       Fx += dx / drPower32;
