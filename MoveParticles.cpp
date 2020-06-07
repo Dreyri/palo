@@ -4,7 +4,8 @@
 
 void MoveParticles(const int nr_Particles, Particle *const partikel,
                    const float dt) {
-  __assume_aligned(partikel, 64);
+  // nicht noetig aber auch eine moeglichkeit alignment anzugeben
+  //__assume_aligned(partikel, 64);
 
   // Schleife �ber alle Partikel
   for (int i = 0; i < nr_Particles; i++) {
@@ -13,6 +14,9 @@ void MoveParticles(const int nr_Particles, Particle *const partikel,
     float Fx = 0, Fy = 0, Fz = 0;
 
     // Schleife �ber die anderen Partikel die Kraft auf Partikel i aus�ben
+    // wir benutzen eine simdlen von 16 weil partikel 64 byte aligned sind und
+    // 64 / 4 = 16
+#pragma omp simd simdlen(16) aligned(partikel : 64)
     for (int j = 0; j < nr_Particles; j++) {
 
       // Abschw�chung als zus�tzlicher Abstand, um Singularit�t und
