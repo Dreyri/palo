@@ -3,30 +3,44 @@
 #include <cmath>
 
 void MoveParticlesSoA(ParticleSoA &particles, float dt) {
-  __assume_aligned(particles.x, 64);
-  __assume_aligned(particles.y, 64);
-  __assume_aligned(particles.z, 64);
-  __assume_aligned(particles.vx, 64);
-  __assume_aligned(particles.vy, 64);
-  __assume_aligned(particles.vz, 64);
 
-#pragma omp simd simdlen(16)
-  for (int i = 0; i != particles.size; ++i) {
+  // these are to indicate that none of the pointer alias each other
+  // this is required because they are pointers to the same type so the c++
+  // standard assumes that they can alias, another way around this would be
+  // making strong type wrappers but this would be more effort than simply
+  // making a few restrict pointers.
+  float *__restrict__ x = particles.x;
+  float *__restrict__ y = particles.y;
+  float *__restrict__ z = particles.z;
+  float *__restrict__ vx = particles.vx;
+  float *__restrict__ vy = particles.vy;
+  float *__restrict__ vz = particles.vz;
+  int size = particles.size;
+
+  // this indicates that our loop counter is a multiple of 16 and therefore the
+  // compiler won't be required to generate peel loops
+  __assume(size % 16 == 0);
+
+  __assume_aligned(x, 64);
+  __assume_aligned(y, 64);
+  __assume_aligned(z, 64);
+  __assume_aligned(vx, 64);
+  __assume_aligned(vy, 64);
+  __assume_aligned(vz, 64);
+
+// the aligned attribute for simd does nothing
+#pragma omp simd simdlen(16) // aligned(x, y, z, vx, vy, vz : 64)
+  for (int i = 0; i != size; ++i) {
     float Fx = 0.f;
     float Fy = 0.f;
     float Fz = 0.f;
 
-    __assume_aligned(particles.x, 64);
-    __assume_aligned(particles.y, 64);
-    __assume_aligned(particles.z, 64);
-
-#pragma omp simd simdlen(16)
-    for (int j = 0; j != particles.size; ++j) {
+    for (int j = 0; j != size; ++j) {
       constexpr float softening = 1e-20;
 
-      float dx = particles.x[j] - particles.x[i];
-      float dy = particles.y[j] - particles.y[i];
-      float dz = particles.z[j] - particles.z[i];
+      float dx = x[j] - x[i];
+      float dy = y[j] - y[i];
+      float dz = z[j] - z[i];
       float drSquared = dx * dx + dy * dy + dz * dz + softening;
 
       float drPower32 = std::sqrt(drSquared) * drSquared;
@@ -36,15 +50,15 @@ void MoveParticlesSoA(ParticleSoA &particles, float dt) {
       Fz += dy / drPower32;
     }
 
-    particles.vx[i] += dt * Fx;
-    particles.vy[i] += dt * Fy;
-    particles.vz[i] += dt * Fy;
+    vx[i] += dt * Fx;
+    vy[i] += dt * Fy;
+    vz[i] += dt * Fy;
   }
 
   for (int i = 0; i < particles.size; ++i) {
-    particles.x[i] += particles.vx[i] * dt;
-    particles.y[i] += particles.vy[i] * dt;
-    particles.z[i] += particles.vz[i] * dt;
+    x[i] += vx[i] * dt;
+    y[i] += vy[i] * dt;
+    z[i] += vz[i] * dt;
   }
 }
 
