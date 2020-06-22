@@ -48,13 +48,14 @@ void MoveParticlesSoA(ParticleSoA &particles, float dt) {
   ASSUME_ALIGNED(vy, 64);
   ASSUME_ALIGNED(vz, 64);
 
-// the aligned attribute for simd does nothing
-#pragma omp simd simdlen(16) // aligned(x, y, z, vx, vy, vz : 64)
-  for (int i = 0; i != size; ++i) {
+  // the aligned attribute for simd does nothing
+  //#pragma omp simd simdlen(16) // aligned(x, y, z, vx, vy, vz : 64)
+  for (int i = 0; i < size; ++i) {
     float Fx = 0.f;
     float Fy = 0.f;
     float Fz = 0.f;
 
+#pragma omp parallel for shared(x, y, z) reduction(+ : Fx, Fy, Fz)
     for (int j = 0; j != size; ++j) {
       constexpr float softening = 1e-20;
 
