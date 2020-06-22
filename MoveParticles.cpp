@@ -6,9 +6,7 @@ void MoveParticlesSoA(ParticleSoA &particles, float dt) {
 
   // these are to indicate that none of the pointer alias each other
   // this is required because they are pointers to the same type so the c++
-  // standard assumes that they can alias, another way around this would be
-  // making strong type wrappers but this would be more effort than simply
-  // making a few restrict pointers.
+  // standard assumes that they can alias.
   float *__restrict__ x = particles.x;
   float *__restrict__ y = particles.y;
   float *__restrict__ z = particles.z;
