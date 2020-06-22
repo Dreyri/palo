@@ -2,6 +2,28 @@
 
 #include <cmath>
 
+#if __has_builtin(__builtin_assume_aligned)
+#define ASSUME_ALIGNED(x, alignment)                                           \
+  x = static_cast<decltype(x)>(__builtin_assume_aligned(x, alignment))
+#elif defined(__INTEL_COMPILER)
+#define ASSUME_ALIGNED(x, alignment) __assume_aligned(x, alignment)
+#else
+#define ASSUME_ALIGNED(x, alignment) (void)0
+#endif
+
+#if defined(__INTEL_COMPILER)
+#define ASSUME(x) __assume(x)
+#elif __has_builtin(__builtin_unreachable)
+#define ASSUME(x)                                                              \
+  do {                                                                         \
+    if (!(x)) {                                                                \
+      __builtin_unreachable();                                                 \
+    }                                                                          \
+  } while (0)
+#else
+#define ASSUME(x) (void)0
+#endif
+
 void MoveParticlesSoA(ParticleSoA &particles, float dt) {
 
   // these are to indicate that none of the pointer alias each other
@@ -17,14 +39,14 @@ void MoveParticlesSoA(ParticleSoA &particles, float dt) {
 
   // this indicates that our loop counter is a multiple of 16 and therefore the
   // compiler won't be required to generate peel loops
-  __assume(size % 16 == 0);
+  ASSUME(size % 16 == 0);
 
-  __assume_aligned(x, 64);
-  __assume_aligned(y, 64);
-  __assume_aligned(z, 64);
-  __assume_aligned(vx, 64);
-  __assume_aligned(vy, 64);
-  __assume_aligned(vz, 64);
+  ASSUME_ALIGNED(x, 64);
+  ASSUME_ALIGNED(y, 64);
+  ASSUME_ALIGNED(z, 64);
+  ASSUME_ALIGNED(vx, 64);
+  ASSUME_ALIGNED(vy, 64);
+  ASSUME_ALIGNED(vz, 64);
 
 // the aligned attribute for simd does nothing
 #pragma omp simd simdlen(16) // aligned(x, y, z, vx, vy, vz : 64)
