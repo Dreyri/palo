@@ -14,5 +14,5 @@ set(SRC
 
 add_executable(ausarbeitung ${SRC})
 target_link_libraries(ausarbeitung PRIVATE OpenMP::OpenMP_CXX)
-set_property(TARGET ausarbeitung PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+#set_property(TARGET ausarbeitung PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 target_compile_features(ausarbeitung PRIVATE cxx_std_17)
