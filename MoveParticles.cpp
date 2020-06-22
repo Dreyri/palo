@@ -16,7 +16,7 @@ void MoveParticles(const int nr_Particles, Particle *const partikel,
     // Schleife �ber die anderen Partikel die Kraft auf Partikel i aus�ben
     // wir benutzen eine simdlen von 16 weil partikel 64 byte aligned sind und
     // 64 / 4 = 16
-#pragma omp simd simdlen(16) aligned(partikel : 64)
+#pragma omp parallel for  simd simdlen(16) aligned(partikel : 64) reduction(+ : Fx, Fy, Fz)
     for (int j = 0; j < nr_Particles; j++) {
 
       // Abschw�chung als zus�tzlicher Abstand, um Singularit�t und
