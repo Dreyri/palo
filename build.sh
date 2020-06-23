@@ -1,5 +1,5 @@
 CLANG_FLAGS="-march=native -O3 -DNDEBUG -Wall -Wextra -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record"
-ICPC_FLAGS="-march=native -O3 -DNDEBUG -qopt-report=5 -qopt-report-phase=vec,loop,openmp,ipo -fp-model=strict"
+ICPC_FLAGS="-march=native -O3 -DNDEBUG -qopt-report=5 -qopt-report-phase=vec,loop,openmp,ipo -fp-model=precise"
 GCC_FLAGS="-march=native -O3 -DNDEBUG -Wall -Wextra"
 
 case $1 in
