@@ -74,7 +74,7 @@ float calcChecksumSoA(ParticleSoA &original, ParticleSoA &modified) noexcept {
 
 int main() {
   // Problemgr��e und Anzahl und Gr��e der Zeitschritte definieren
-  constexpr int nrOfParticles = 16384;
+  constexpr int nrOfParticles = 16384; // 437000;
   constexpr int nrRuns =
       10; // Anzahl der L�ufe und der Zeitschritte der Simulation
   constexpr int skipRuns =

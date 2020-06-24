@@ -48,21 +48,63 @@ void MoveParticlesSoA(ParticleSoA &particles, float dt) {
   ASSUME_ALIGNED(vy, 64);
   ASSUME_ALIGNED(vz, 64);
 
+  // 7c. Occupy exactly one cache line to minimize cache misses
+  constexpr std::size_t tile_size = 16384;
+
 // the aligned attribute for simd does nothing
 //#pragma omp simd simdlen(16) // aligned(x, y, z, vx, vy, vz : 64)
 // 6c. Parallelisierung der schleife mit parallel for und angabe der shared
 // variablen
-#pragma omp parallel for shared(x, y, z, vx, vy, vz) schedule(guided, 16)
-  for (int i = 0; i < size; ++i) {
+#pragma omp parallel for shared(x, y, z, vx, vy, vz)
+  for (int i = 0; i < size; i += tile_size) {
+
+    /*
     float Fx = 0.f;
     float Fy = 0.f;
     float Fz = 0.f;
+    */
+
+    /*
+      float Fx[tile_size]{};
+      float Fy[tile_size]{};
+      float Fz[tile_size]{};
+      */
 
 // 6a. Added the parallel for part, indicating shared variables x y z and
 // reductions over Fx Fy and Fz
 #pragma omp /* parallel for*/ simd simdlen(                                    \
     16) // shared(x, y, z) reduction(+ : Fx, Fy, Fz)
     for (int j = 0; j != size; ++j) {
+
+      float Fx = 0.f;
+      float Fy = 0.f;
+      float Fz = 0.f;
+
+#pragma omp simd simdlen(16)
+      for (int ii = i; ii != (i + tile_size); ++ii) {
+        constexpr float softening = 1e-20;
+
+        float dx = x[j] - x[ii];
+        float dy = y[j] - y[ii];
+        float dz = z[j] - z[ii];
+        float drSquared = dx * dx + dy * dy + dz * dz + softening;
+
+        float drPower32 = std::sqrt(drSquared) * drSquared;
+
+        Fx += dx / drPower32;
+        Fy += dy / drPower32;
+        Fz += dz / drPower32;
+        /*
+          Fx[ii - i] += dx / drPower32;
+          Fy[ii - i] += dy / drPower32;
+          Fz[ii - i] += dz / drPower32;
+          */
+      }
+
+      vx[j] += dt * Fx;
+      vy[j] += dt * Fy;
+      vz[j] += dt * Fz;
+      /*
       constexpr float softening = 1e-20;
 
       float dx = x[j] - x[i];
@@ -75,11 +117,22 @@ void MoveParticlesSoA(ParticleSoA &particles, float dt) {
       Fx += dx / drPower32;
       Fy += dy / drPower32;
       Fz += dy / drPower32;
+      */
     }
 
+    /*
     vx[i] += dt * Fx;
     vy[i] += dt * Fy;
     vz[i] += dt * Fy;
+    */
+
+    /*
+     for (int ii = 0; ii != tile_size; ++ii) {
+       vx[ii] += dt * Fx[ii];
+       vy[ii] += dt * Fy[ii];
+       vz[ii] += dt * Fz[ii];
+     }
+     */
   }
 
   for (int i = 0; i < particles.size; ++i) {
